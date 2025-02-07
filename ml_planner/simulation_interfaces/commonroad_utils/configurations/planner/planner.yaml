@@ -1,0 +1,50 @@
+planner:
+    _target_: ml_planner.planner.ml_sampling_planner.MLSamplingPlanner
+    _convert_: 'all'
+    _partial_: False
+
+    # model name for trained models in planner/models of the vehicle_dynamics_sampling_planner repo
+    model_name: "full_model_wo_acc_512rbf"
+    model_type: "ExtendedRBF"
+    dynamic_model: "KS"
+    vehicle_model: "BMW320i"
+
+    # plan_in_potential_field: False
+
+    sample_feasible_region: True
+    latest_resampling_every_n_steps: 5
+    use_improved_trajectories: False
+    # number_trajectories: 800
+
+    # lateral sampling:
+    y_min: -15
+    y_max: 15
+    dy: 1
+
+    # longitudinal sampling based on current velocity and max acceleration
+    dx: 3
+
+    # final heading
+    psi_min: -0.16 #-1.6
+    psi_max: 1.6
+    dpsi: 0.16
+    cost_weights:
+        # acceleration: .1
+        distance_to_reference_path: 10.0
+        velocity_offset: 200
+        orientation_offset: 0
+        prediction: 100
+        distance_to_boundary: 100
+    #     jerk: 0.00
+    #     lateral_jerk: 0.2
+    #     longitudinal_jerk: 0.2
+
+    #     path_length: 0.0
+
+
+    #     velocity: 0.
+    #     distance_to_reference_path: 5.0
+    #     distance_to_obstacles: 0.0
+
+    #
+    #     responsibility: 0
