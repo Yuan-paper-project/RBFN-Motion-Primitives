@@ -82,8 +82,6 @@ You probably have to reopen the Readme to see the gifs.
 </details>
 
 
-
-##
 <details>
 <summary> <h2>📈 Test Data </h2> </summary>
 
