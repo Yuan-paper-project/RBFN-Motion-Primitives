@@ -9,12 +9,9 @@ planner:
     dynamic_model: "KS"
     vehicle_model: "BMW320i"
 
-    # plan_in_potential_field: False
-
     sample_feasible_region: True
     latest_resampling_every_n_steps: 5
     use_improved_trajectories: False
-    # number_trajectories: 800
 
     # lateral sampling:
     y_min: -15
@@ -25,11 +22,10 @@ planner:
     dx: 3
 
     # final heading
-    psi_min: -0.16 #-1.6
+    psi_min: -1.6
     psi_max: 1.6
     dpsi: 0.16
     cost_weights:
-        # acceleration: .1
         distance_to_reference_path: 10.0
         velocity_offset: 200
         orientation_offset: 0
