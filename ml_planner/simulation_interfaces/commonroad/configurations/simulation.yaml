@@ -1,0 +1,60 @@
+hydra:
+  run:
+    dir: ${output_dir}
+  output_subdir: ${output_dir}/code/hydra                       # Store hydra's config breakdown here for debugging
+  searchpath:                                                   # Only <exp_dir> in these paths are discoverable
+    - pkg://ml_planner.simulation_interfaces.commonroad.configurations
+    - pkg://ml_planner.simulation_interfaces.commonroad.configurations.subconfigs
+
+defaults:
+    - _self_
+  # - planner_config:
+    - planner_config
+
+
+# interface parameters
+max_steps: 1.3 # amount by which simulation can be exceeded
+# simulation interface logging level
+interface_logging_level: !!null # set in the main file
+log_path: !!null # set in the main file
+scenario_path: !!null # set in the main file
+
+# visualization parameters
+visualization_config:
+  make_plot: True
+  render_plots: True
+  show_ref_path: True
+  show_optimal_trajectory: True
+  show_all_trajectories: True
+  make_gif: True
+
+
+prediction_config:
+    mode: "semantic_cv" # "walenet", "ground_truth", "semantic_cv" or None
+
+    # Sensor Radius in Meter and Occlusion Area
+    calc_visible_area: False
+    sensor_radius: 30
+
+    # localization uncertainty for semantic_cv
+    uncertainties:
+      x: 2
+      y: 2
+      vx: 1
+      vy: 0.5
+      process_noice: 0
+    # Cone Angle and Safety Dist for Cone Angle
+    cone_angle: 0
+    cone_safety_dist: 0
+
+#  UNCERTAINTIES
+uncertainty_config: # all values refer to the vehicle's local frame -
+  localization:
+    x: 0.1 # std in m
+    y: 0.1 # std in m
+    psi: 0.01 # std in rad
+  boundary: # uncertainty in boundary detection
+    x: 0.5 # std in m
+    d_x: 0.0 # increase with increasing distance to ego
+    y: 0.25 # std in m
+    d_y: 0.0 # increase with increasing distance to ego

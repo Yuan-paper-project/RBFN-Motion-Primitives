@@ -1,0 +1,72 @@
+{
+    "num_points_per_traj": 31,
+    "input_labels": [
+        "x_0",
+        "y_0",
+        "psi_0",
+        "v_0",
+        "delta_0",
+        "x_f",
+        "y_f",
+        "psi_f"
+    ],
+    "output_labels": [
+        "x",
+        "y",
+        "psi",
+        "v",
+        "delta"
+    ],
+    "num_kernels": 1024,
+    "basis_func": "gaussian",
+    "bounds": [
+        [
+            -8.676101684570312,
+            81.0
+        ],
+        [
+            -74.0,
+            74.0
+        ],
+        [
+            -2.362111806869507,
+            2.362111806869507
+        ],
+        [
+            -9.999834738039226e-09,
+            28.0
+        ],
+        [
+            -11.478340148925781,
+            11.775184631347656
+        ]
+    ],
+    "vehicle": {
+        "vehicle_type": "BMW320i",
+        "dynamic_model": "kinematic_single_track",
+        "control_mode": "steering_jerk"
+    },
+    "time": {
+        "planning_horizon": 3,
+        "dt": 0.1
+    },
+    "sampling": {
+        "v0": [
+            0,
+            28
+        ],
+        "dv": 1,
+        "delta0": [
+            -1.0,
+            1.0
+        ],
+        "ddelta": 0.1,
+        "psif": [
+            -1.6,
+            1.6
+        ],
+        "dpsi": 0.16,
+        "dx": 3,
+        "dy": 1
+    }
+}

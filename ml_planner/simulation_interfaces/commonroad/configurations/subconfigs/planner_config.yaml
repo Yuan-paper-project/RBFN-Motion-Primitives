@@ -1,0 +1,44 @@
+planner_config:
+    _target_: ml_planner.planner.ml_planner.MLPlanner
+    _convert_: 'all'
+    _partial_: False
+
+    # planner logging level
+    logging_level: !!null # set in the main file
+    visual_debug_mode: False  # creates a bokeh plot of each step
+
+    # model name and network type for trained models
+    sampling_model_path: !!null # set in the main file
+    sampling_model_name: "extended_rbf_gaussian_1024_kinematic_single_track_steering_jerk_wo_acc_w_delta"
+    sampling_model_type: "ExtendedRBF"
+
+    # SAMPLING
+    sampling_config:
+        sample_feasible_region: True
+        latest_resampling_every_n_steps: 2
+        use_improved_trajectories: True
+        # ff: if null use model params
+        # lateral sampling:
+        y_min: !!null # -15
+        y_max: !!null #15
+        dy: 1
+        # longitudinal sampling based on current velocity and max acceleration
+        dx: 3
+        x_max: !!null
+        x_min: !!null
+        # final heading
+        psi_min: -1.6
+        psi_max: 1.6
+        dpsi:  0.16
+
+    # COSTS
+    cost_weights:
+
+        distance_to_reference_path: 20 # along trajectory
+        distance_to_reference_path_final: 5.0 # only at last position
+        velocity_offset_final: 5
+        orientation_offset: 1
+        orientation_offset_final: 1
+
+        prediction: 3
+        distance_to_boundary: 0

@@ -1,0 +1,24 @@
+# dataset parameters
+
+vehicle:
+  vehicle_type: BMW320i
+  dynamic_model: kinematic_single_track # point_mass, kinematic_single_track, single_track
+  control_mode: steering_jerk # jerk,  steering_jerk
+
+time:
+  planning_horizon: 3 # seconds
+  dt: 0.1 # seconds
+
+sampling:
+  # initial velocity
+  v0: [0, 28] # m/s  # BMW320i vehicle_params.longitudinal.v_max = 50.8 m/s
+  dv: 1
+  # initial steering angle
+  delta0: [-1., 1.] # rad BMW320i vehicle_params.steering.max = 1.066
+  ddelta: 0.1 # 0.1
+  # final heading
+  psif: [-1.6, 1.6] # rad
+  dpsi: 0.16
+  # final position, calculated based on initial velocity
+  dx: 3
+  dy: 1

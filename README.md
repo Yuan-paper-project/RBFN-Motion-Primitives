@@ -1,11 +1,11 @@
 [![Linux](https://img.shields.io/badge/os-linux-blue.svg)](https://www.linux.org/)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/) [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/) 
 [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
 
 # MP-RBFN - Radial-basis function based Motion Primitives
 
 
-<img src="doc/Sampling.png" alt="Sampling " height="300"/>
+<img src="doc/Figure_1.png" alt="Sampling " height="300"/>
 
 MP-RBFN is a neural network based on Radial Basis Function Networks to efficiently learn motion primitives derived from optimal control problems. Traditional optimization-based methods for motion planning show compelling accuracy while being computationally prohibitive. In contrast, sampling-based approaches exhibit high performance but restrict the geometric shape of the trajectories. The proposed MP-RBFN combines the high fidelity of sampling methods with a precise description of vehicle dynamics. We demonstrate superior performance compared to previous methods, achieving a precise description of motion primitives at low inference times. MP-RBFN yields
 a seven times higher accuracy in generating optimized motion primitives than existing semi-analytic MPs. The integration into a sampling-based trajectory planner displays the applicability of MP-RBFN-based motion primitives in autonomous driving.
@@ -62,7 +62,7 @@ All scripts can be found in **scripts**
 
 1. If you want to create a customized dataset, run `run_dataset_creation.py`. The optimal control problem can be adjusted in in `ml_planner.analytic_solution`.
 
-2. For training a model, use `run_training.py`. The different networks are stored in `ml_planner.planner.networks`.
+2. For training a model, use `run_training.py`. The different networks are stored in `ml_planner.sampling.networks`.
 
 3. To run a CommonRoad simulation, use the script `run_cr_simulation.py`. The **configurations** for the simulation and the planner can be found in `ml_planner.simulation_interfaces.commonroad_utils.configuration`.
 
@@ -76,10 +76,12 @@ If you want to run the benchmark analysis with the analytical planner, you need 
 
 You probably have to reopen the Readme to see the gifs.
 
-<img src="doc/ZAM_Over-1_1.gif" alt="Overtaking maneuver" width="800"/>
+<img src="doc/ZAM_Over-1_2.gif" alt="Overtaking maneuver" width="800"/>
 
-
+<img src="doc/ZAM_Tjunction-1_27_T-1.gif" alt="Overtaking maneuver" width="800"/>
 </details>
+
+
 
 
 <details>

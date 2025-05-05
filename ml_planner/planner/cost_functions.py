@@ -5,136 +5,165 @@ __maintainer__ = "Marc Kaufeld"
 __email__ = "marc.kaufeld@tum.de"
 __status__ = "Beta"
 
-from abc import ABC
 import torch
-from ml_planner.planner.networks.utils import DTYPE
+import torch.nn as nn
+from ml_planner.general_utils.data_types import DTYPE
 
 
-class Costs(ABC):
+class Costs(nn.Module):
 
-    def __init__(self, cost_weights, output_labels, device):
+    def __init__(self, cost_weights, device):
         super().__init__()
-        # self.cost_weights = cost_weights
         self.device = device
-        self.cost_terms = list(cost_weights.keys())
-        self.output_labels = output_labels
-        self.cost_functions = [getattr(self, term) for term in self.cost_terms
-                               if callable(getattr(self, term, None))]
-        self.cost_weights = torch.tensor([cost_weights[term] for term in self.cost_terms
-                                          if callable(getattr(self, term, None))], dtype=DTYPE, device=self.device)
+        self.cost_terms = [cost for cost, val in cost_weights.items() if callable(getattr(self, cost, None)) and val != 0]
+        self.cost_functions = [getattr(self, term) for term in self.cost_terms]
+        self.cost_weights = nn.Parameter(
+            torch.tensor(
+                [cost_weights[term] for term in self.cost_terms],
+                dtype=DTYPE,
+                device=self.device,
+            )
+        )
 
-    def calculate(self, trajectories, reference_path, desired_velocity, predictions, boundary):
+    def extra_repr(self) -> str:
+        return f"""cost_terms={self.cost_terms},"""
+
+    def forward(self, trajectories, ego_shape,  reference_path, desired_velocity, obstacle_predictions, lane_predictions):
         """Calculate the total cost of a trajectory"""
-        costs = [cost_function(trajectories, reference_path, desired_velocity, predictions, boundary)
-                 for cost_function in self.cost_functions]
+        costs = [
+            cost_function(trajectories, ego_shape, reference_path, desired_velocity, obstacle_predictions, lane_predictions)
+            for cost_function in self.cost_functions
+        ]
         costs = torch.stack(costs).T
         total_costs = costs @ self.cost_weights
         return total_costs, costs
 
-    def acceleration(self, trajectories, reference_path, desired_velocity, predictions, boundary):
-        """Calculate the acceleration cost along a trajectory"""
-        try:
-            idx = self.output_labels.index('acc')
-            costs = trajectories[:, idx, :].pow(2).sum(dim=1)
-        except ValueError:
-            raise NotImplementedError
-        return costs
-
-    def distance_to_reference_path(self, trajectories, reference_path, desired_velocity, predictions, boundary):
-        """Calculate the distance to the reference path
-            Reference path is in vehicle coordinates -> distance only in lateral direction "y_loc"
+    def distance_to_reference_path(
+        self, trajectories, ego_shape, reference_path, desired_velocity, obstacle_predictions, lane_predictions
+    ):
+        """Calculate the mahalanobis distance to the reference path
+        based on own state uncertainty
+        Reference path is in vehicle coordinates
         """
-        idx_x = self.output_labels.index('x')
-        idx_y = self.output_labels.index('y')
-        path = reference_path
-        costs = 0
-        # along complete trajectory
-        trajs = trajectories[:, [idx_x, idx_y], :].unsqueeze(1)
-        path_expanded = path.unsqueeze(0).unsqueeze(-1)
-        dist = torch.sqrt(torch.sum((trajs[:, :, [idx_x, idx_y], :] - path_expanded[:, :, :2, :])**2, dim=-2))
+        path = reference_path.coords
+        traj = trajectories.coords
+        inv_cov = torch.inverse(trajectories.coords_cov).unsqueeze(-3)
 
-        dist_min, _ = dist.min(dim=1)
-        costs += dist_min.sum(dim=1)
+        delta = (traj.unsqueeze(-2) - path).unsqueeze(-1)
+        mahalanobis_square = (delta.mT @ inv_cov @ delta).squeeze()
+        dist_min, _ = mahalanobis_square.min(dim=-1)
 
-        # only at last position
-        costs += dist_min[:, -1]*10
+        # avg along trajectory
+        costs = dist_min.sum(dim=-1) / dist_min.shape[-1]
+        costs /= costs.max()
         return costs
 
-    def velocity_offset(self, trajectories, reference_path, desired_velocity, predictions, boundary):
+    def distance_to_reference_path_final(
+        self, trajectories, ego_shape, reference_path, desired_velocity, obstacle_predictions, lane_predictions
+    ):
+        """Calculate the mahalanobis distance to the reference path
+        based on own state uncertainty
+        Reference path is in vehicle coordinates
+        """
+        path = reference_path.coords
+        traj = trajectories.coords[..., -1, :]
+        inv_cov = torch.inverse(trajectories.coords_cov[:,-1,...]).unsqueeze(-3)
+
+        delta = (traj.unsqueeze(-2) - path).unsqueeze(-1)
+        mahalanobis_square = (delta.mT @ inv_cov @ delta).squeeze()
+        dist_min, _ = mahalanobis_square.min(dim=-1)
+        costs = dist_min
+        costs /= costs.max()
+        return costs
+
+    def velocity_offset_final(
+        self, trajectories, ego_shape, reference_path, desired_velocity, obstacle_predictions, lane_predictions
+    ):
         """Calculate the velocity offset cost at end of trajectory"""
-        costs = 0
         try:
-            idx = self.output_labels.index('v')
             # at last position
-            costs += (trajectories[:, idx, -1]-desired_velocity).pow(2)
+            costs = ((trajectories.v[..., -1] - desired_velocity) / desired_velocity).pow(2)
         except ValueError:
             raise NotImplementedError
-            # TODO calculate velocity from position -> maybe makes sense before Cost calculation to check this
         return costs
 
-    def orientation_offset(self, trajectories, reference_path, desired_velocity, predictions, boundary):
-        """Calculate the offset to the orientation of the reference path
-            Reference path is in vehicle coordinates -> distance only in lateral direction "y_loc"
+    def orientation_offset(
+        self, trajectories, ego_shape, reference_path, desired_velocity, obstacle_predictions, lane_predictions
+    ):
+        """Calculate the offset to the orientation of the reference path along complete trajectory
         """
-        idx_x = self.output_labels.index('x')
-        idx_y = self.output_labels.index('y')
-        idx_psi = self.output_labels.index('psi')
-        path = reference_path
-        costs = 0
-
-        # along complete trajectory
-        trajs = trajectories[:, [idx_x, idx_y], :].unsqueeze(1)
-        path_expanded = path.unsqueeze(0).unsqueeze(-1)
-        dist = torch.sqrt(torch.sum((trajs[:, :, [idx_x, idx_y], :] - path_expanded[:, :, :2, :])**2, dim=-2))
-        mask = dist.argmin(dim=1, keepdim=False)
-        costs += torch.sum((trajectories[:, idx_psi, :] - path[mask][:, :, 2])**2, dim=1)
-
-        # only at last position
-        path_expanded = path.unsqueeze(0).expand(trajectories.shape[0], -1, -1)
-        dist = torch.sqrt(torch.sum((trajs[:, :, [idx_x, idx_y], -1] - path_expanded[:, :, :2])**2, dim=-1))
-        mask = dist.argmin(dim=1, keepdim=False)
-        costs += (trajectories[:, idx_psi, -1] - path[mask][:, 2]).pow(2)*20
+        path_coords = reference_path.coords
+        traj_coords = trajectories.coords
+        dist = torch.sqrt(torch.sum((traj_coords.unsqueeze(-2) - path_coords) ** 2, dim=-1))
+        mask = dist.argmin(dim=-1, keepdim=False)
+        # with mahalanobis distance:
+        path_psi = reference_path.psi[mask]
+        traj_psi = trajectories.psi
+        inv_cov = 1/trajectories.covs[..., trajectories.psi_idx, trajectories.psi_idx]
+        delta = path_psi - traj_psi
+        mahalanobis_square = delta * inv_cov * delta
+        # average along trajectory
+        costs = mahalanobis_square.sum(dim=-1) / mahalanobis_square.shape[-1]
+        costs /= costs.max()
         return costs
 
-    def prediction(self, trajectories, reference_path, desired_velocity, predictions, boundary):
+    def orientation_offset_final(
+        self, trajectories, ego_shape, reference_path, desired_velocity, obstacle_predictions, lane_predictions
+    ):
+        """Calculate the offset to the orientation of the reference path only at last position
+        Reference path is in vehicle coordinates -> distance only in lateral direction "y_loc"
+        """
+        path_coords = reference_path.coords
+        traj_coords = trajectories.coords[..., -1, :]
+        dist = torch.sqrt(torch.sum((traj_coords.unsqueeze(-2) - path_coords) ** 2, dim=-1))
+        mask = dist.argmin(dim=-1, keepdim=False)
+        # # with mahalanobis distance:
+        path_psi = reference_path.psi[mask]
+        traj_psi = trajectories.psi[..., -1]
+        inv_cov = 1/trajectories.covs[..., -1, trajectories.psi_idx, trajectories.psi_idx]
+        delta = path_psi - traj_psi
+
+        mahalanobis_square = delta * inv_cov * delta
+
+        costs = mahalanobis_square
+
+        costs /= costs.max()
+        return costs
+
+    def prediction(self, trajectories, ego_shape, reference_path, desired_velocity, obstacle_predictions, lane_predictions):
         """Calculate the prediction costs based on the inverse mahalanobis distance"""
-        if predictions:
-            x_idx = self.output_labels.index('x')
-            y_idx = self.output_labels.index('y')
-            indices = [x_idx, y_idx]
-            pred_pos = predictions[0]
-            pred_cov = predictions[1]
-            inv_cov = torch.inverse(pred_cov)
-
-            pred_pos = predictions[0]
-            pred_cov = predictions[1]
-            inv_cov = torch.inverse(pred_cov)
-            traj = trajectories[:, indices, :pred_pos.shape[-2]]
-            traj = traj.transpose(-1, -2).unsqueeze(1)
-
-            delta = (traj - pred_pos).unsqueeze(-1)
-            mahalanobis_square = delta.transpose(-1, -2) @ inv_cov  @ delta
-            inv_dist = 1 / (mahalanobis_square.squeeze(-1).squeeze(-1))
-            costs = inv_dist.sum(dim=-1).sum(dim=-1)
-
-        else:
-            costs = torch.zeros(trajectories.shape[0], dtype=DTYPE, device=self.device)
+        inv_dists = torch.zeros([trajectories.num_batches, trajectories.num_states], dtype=DTYPE, device=self.device)
+        trajs = trajectories.coords
+        for pred in obstacle_predictions:
+            states = pred["states"]
+            pred_pos = states.coords
+            inv_cov = torch.inverse(states.coords_cov)
+            num_steps = min(pred_pos.shape[-2], trajs.shape[-2])
+            delta = (trajs[..., :num_steps, :] - pred_pos[..., :num_steps, :]).unsqueeze(-1)
+            mahalanobis_square = (delta.mT @ inv_cov[:num_steps, ...] @ delta).squeeze()
+            inv_dists += 1 / mahalanobis_square
+        # max along trajectory
+        costs, _ = inv_dists.max(dim=-1)
         return costs
 
-    def distance_to_boundary(self, trajectories, reference_path, desired_velocity, predictions, boundary):
+    def distance_to_boundary(
+        self, trajectories, ego_shape, reference_path, desired_velocity, obstacle_predictions, lane_predictions
+    ):
         """Calculate the cost based on the distance to the boundary"""
-
-        idx_x = self.output_labels.index('x')
-        idx_y = self.output_labels.index('y')
-        indices = [idx_x, idx_y]
-
-        # along complete trajectory
-        trajs = trajectories[:, indices, :].unsqueeze(1)
-        bounds_extended = boundary.unsqueeze(0).unsqueeze(-1)
-
-        dist = torch.sqrt(torch.sum((trajs[:, :, indices, :] - bounds_extended[:, :, :2, :])**2, dim=-2))
-
-        dist_min, _ = dist.min(dim=1, keepdim=False)
-        costs = (1 / dist_min**2).sum(dim=1)
-
+        # mahalanobis distance
+        traj = trajectories.coords
+        inv_dists = torch.zeros([trajectories.num_batches, trajectories.num_states], dtype=DTYPE, device=self.device)
+        for pred in lane_predictions:
+            if pred["boundary"] == True:
+                boundary = pred["states"]
+                coords = boundary.coords
+                inv_cov = torch.inverse(boundary.coords_cov)
+                delta = (traj.unsqueeze(-2) - coords).unsqueeze(-1)
+                mahalanobis_square = (delta.mT @ inv_cov @ delta).squeeze()
+                dist_min, _ = mahalanobis_square.min(dim=-1)
+                dist_min = dist_min.clip(min=0.01)
+                inv_dists += 1 / dist_min
+        # max along trajectory
+        costs, _ = inv_dists.max(dim=-1)
         return costs
+

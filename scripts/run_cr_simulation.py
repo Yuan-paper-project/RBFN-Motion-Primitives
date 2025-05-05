@@ -9,7 +9,7 @@ import warnings
 import shutil
 import hydra
 from pathlib import Path
-from ml_planner.simulation_interfaces.commonroad_interface import CommonroadInterface
+from ml_planner.simulation_interfaces.commonroad.commonroad_interface import CommonroadInterface
 
 """
 This script runs a simulation of a with a MP-RBFN Planner commonroad scenario.
@@ -19,8 +19,11 @@ This script runs a simulation of a with a MP-RBFN Planner commonroad scenario.
 # PATH AND DEBUG CONFIGURATION
 CWD = Path.cwd()
 DATA_PATH = CWD / "example_scenarios"
-SCENARIO = DATA_PATH / "ZAM_Over-1_1_dynamic_1vehicle_5m-s.xml"
+SCENARIO = DATA_PATH / "ZAM_Tjunction-1_27_T-1.xml"
+# SCENARIO = DATA_PATH / "ZAM_Over-1_1_dynamic_1vehicle_10m-s.xml"
 LOG_PATH = CWD / "logs"
+
+MODEL_PATH = CWD / "ml_planner" /  "sampling" / "models"
 
 # debug configurations#
 DELETE_ALL_FORMER_LOGS = False
@@ -29,7 +32,7 @@ LOGGING_LEVEL_INTERFACE = "debug"
 LOGGING_LEVEL_PLANNER = "debug"
 
 # Treat all RuntimeWarnings as errors
-warnings.filterwarnings('error', category=RuntimeWarning)
+warnings.filterwarnings("error", category=RuntimeWarning)
 ###############################
 
 
@@ -42,23 +45,26 @@ def create_config():
     """
     # config overrides
     overrides = [
+        # general overrides
         f"log_path= {LOG_PATH}",
+        # simulation overrides
         f"interface_logging_level={LOGGING_LEVEL_INTERFACE}",
-        f"planner_logging_level={LOGGING_LEVEL_PLANNER}",
         f"scenario_path={SCENARIO}",
-        ]
+        # planner overrides
+        f"planner_config.logging_level={LOGGING_LEVEL_PLANNER}",
+        f"planner_config.sampling_model_path={MODEL_PATH}",
+    ]
 
     # Compose the configuration
-    config_dir = str(Path.cwd() / "ml_planner" / "simulation_interfaces" / "commonroad_utils" / "configurations")
+    config_dir = str(Path.cwd() / "ml_planner" / "simulation_interfaces" / "commonroad" / "configurations")
     with hydra.initialize_config_dir(config_dir=config_dir, version_base=None):
         config = hydra.compose(config_name="simulation", overrides=overrides)
-
-    if DELETE_ALL_FORMER_LOGS:
-        shutil.rmtree(LOG_PATH, ignore_errors=True)
     return config
 
 
 def main():
+    if DELETE_ALL_FORMER_LOGS:
+        shutil.rmtree(LOG_PATH, ignore_errors=True)
     # create configuration
     config = create_config()
 
@@ -66,11 +72,12 @@ def main():
     interface = CommonroadInterface(**config)
     # run simulation
     interface.run()
-    # make gif
-    interface.create_gif()
     # plot final trajectory
     interface.plot_final_trajectory()
+    # make gif
+    interface.create_gif()
 
 
 if __name__ == "__main__":
     main()
+    # TODO überarbeiten logging?
