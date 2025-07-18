@@ -129,7 +129,15 @@ If you use this repository in your research, please cite our related papers:
 
 
 ```bibtex
-t.b.d
+@article{Kaufeld-MPRBFN2025,
+ title={MP-RBFN: Learning-based Vehicle Motion Primitives using Radial Basis Function Networks}, 
+      author={Marc Kaufeld and Mattia Piccinini and Johannes Betz},
+      year={2025},
+      eprint={2507.10047},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2507.10047}, 
+}
 ```
 
 
