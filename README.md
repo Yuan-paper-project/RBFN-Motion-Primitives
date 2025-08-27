@@ -4,150 +4,368 @@
 
 # MP-RBFN - Radial-basis function based Motion Primitives
 
+> **⚠️ Important Note**: This repository is a **modified fork** of the original [MP-RBFN repository](https://github.com/TUM-AVS/MP-RBFN) with significant enhancements for batch simulation and Frenetix integration.
 
-<img src="doc/Figure_1.png" alt="Sampling " height="300"/>
+## Repository Status
 
-MP-RBFN is a neural network based on Radial Basis Function Networks to efficiently learn motion primitives derived from optimal control problems. Traditional optimization-based methods for motion planning show compelling accuracy while being computationally prohibitive. In contrast, sampling-based approaches exhibit high performance but restrict the geometric shape of the trajectories. The proposed MP-RBFN combines the high fidelity of sampling methods with a precise description of vehicle dynamics. We demonstrate superior performance compared to previous methods, achieving a precise description of motion primitives at low inference times. MP-RBFN yields
-a seven times higher accuracy in generating optimized motion primitives than existing semi-analytic MPs. The integration into a sampling-based trajectory planner displays the applicability of MP-RBFN-based motion primitives in autonomous driving.
+This is a **forked and modified version** that includes:
+- **Enhanced batch simulation system** with multi-process execution
+- **Frenetix-style scenario integration** for seamless workflow
+- **Improved visualization** with 60m x 60m ego-centered plots
+- **Real-time CSV output** following Frenetix format standards
+- **Comprehensive error handling** and troubleshooting
+- **Performance optimizations** for CPU-based parallel execution
 
-This repository provides the necessary resources to create a vehicle optimal control dataset, train the MP-RBFN and use it in a sampling-based motion planner.
+## Updating from Original Repository
 
-<details>
-<summary><h2>🖥️ Framework</h2></summary>
-The repository consists of an implementation of an vehicle optimal control problem to generate the dataset of motion primitives. These are then used to train the MP-RBFN. Additionally, a sampling-based motion planner is provided using the trained MP-RBFN to calcualte accurate and computationally efficient motion primitives.
-<img src="doc/framework_no_accel.png" alt="Overview Framework " height="300"/>
+### If you want to pull latest changes from the original repository:
 
-
-<img src="doc/MP_RBFN.png" alt="MP-RBFN " height="300"/>
-
-</details>
-
-
-<details>
-<summary><h2>🔧 Requirements & Installation</h2></summary>
-
-### Requirements
-The software is developed and tested on recent versions of Linux and Python 3.11. We strongly recommend using [Ubuntu 22.04](https://ubuntu.com/download/desktop) or higher. For the Python installation, we suggest the usage of Virtual Environment with Python 3.12, Python 3.11, or Python 3.10. For the development IDE, we suggest [PyCharm](http://www.jetbrains.com/pycharm/) or [VS Code](https://code.visualstudio.com/)
-
-### 1. **Clone** this repository and create a new virtual environment:
-   ```bash
-   git clone <repository-url>
-   cd <repository-folder>
-   ```
-
-   ```bash
-   python3.11 -m venv venv
-   source venv/bin/activate
-   ```
-
-### 2. Install all required packages
-
-
-#### Installation with pip
-You can install the project's requirements using pip:
 ```bash
+# Add the original repository as upstream
+git remote add upstream https://github.com/TUM-AVS/MP-RBFN.git
+
+# Fetch latest changes
+git fetch upstream
+
+# Merge upstream changes (resolve conflicts if any)
+git merge upstream/main
+
+# Push to your fork
+git push origin main
+```
+
+### ⚠️ **Warning**: 
+- **Backup your modifications** before updating
+- **Review all conflicts** carefully - our batch simulation features may conflict with upstream changes
+- **Test thoroughly** after merging to ensure batch functionality still works
+- **Consider creating a feature branch** for major upstream updates
+
+### Recommended Workflow:
+1. **Create a backup branch** of your current modifications
+2. **Update from upstream** on a separate branch
+3. **Merge selectively** to preserve batch simulation features
+4. **Test thoroughly** before updating your main branch
+
+## Original Repository
+
+The original MP-RBFN repository can be found at:
+- **GitHub**: [TUM-AVS/MP-RBFN](https://github.com/TUM-AVS/MP-RBFN)
+- **Original Authors**: Marc Kaufeld, Mattia Piccinini, Johannes Betz
+- **Institution**: Technical University of Munich (TUM)
+
+## Citation
+
+If you use this modified version in your research, please cite both:
+1. **The original MP-RBFN paper** (see original repository)
+2. **Your modifications** if they contribute to your research
+
+---
+
+This repository contains the implementation of MP-RBFN (Motion Primitives based on Radial Basis Function Networks) for motion planning in autonomous driving scenarios.
+
+## Installation
+
+### Option 1: Using conda (Recommended)
+
+```bash
+# Create and activate conda environment
+conda create -n mprbfn python=3.11
+conda activate mprbfn
+
+# Install the package in editable mode
 pip install -e .
 ```
 
+### Option 2: Using venv
 
-### 3. **Optional**: Download additional scenarios [here](https://gitlab.lrz.de/tum-cps/commonroad-scenarios.git).
+```bash
+# Create and activate virtual environment
+python3.11 -m venv mprbfn_env
+source mprbfn_env/bin/activate  # On Windows: mprbfn_env\Scripts\activate
 
-</details>
-
-
-<details>
-<summary><h2>🚀 Step-by-Step Manual</h2></summary>
-
-All scripts can be found in **scripts**
-
-1. If you want to create a customized dataset, run `run_dataset_creation.py`. The optimal control problem can be adjusted in in `ml_planner.analytic_solution`.
-
-2. For training a model, use `run_training.py`. The different networks are stored in `ml_planner.sampling.networks`.
-
-3. To run a CommonRoad simulation, use the script `run_cr_simulation.py`. The **configurations** for the simulation and the planner can be found in `ml_planner.simulation_interfaces.commonroad_utils.configuration`.
-
-
-If you want to run the benchmark analysis with the analytical planner, you need to clone and install [Frenetix](https://github.com/TUM-AVS/Frenetix/) within the same virtual environment
-</details>
-
-
-<details>
-<summary><h2>🎮 Demonstration</h2></summary>
-
-You probably have to reopen the Readme to see the gifs.
-
-<img src="doc/ZAM_Over-1_2.gif" alt="Overtaking maneuver" width="800"/>
-
-<img src="doc/ZAM_Tjunction-1_27_T-1.gif" alt="Overtaking maneuver" width="800"/>
-</details>
-
-
-
-
-<details>
-<summary> <h2>📈 Test Data </h2> </summary>
-
-
-Additional scenarios can be found [here](https://commonroad.in.tum.de/scenarios).
-
-</details>
-
-
-<details>
-<summary> <h2>📇 Contact Info </h2> </summary>
-
-[Marc Kaufeld](mailto:marc.kaufeld@tum.de),
-Professorship Autonomous Vehicle Systems,
-School of Engineering and Design,
-Technical University of Munich,
-85748 Garching,
-Germany
-
-[Mattia Piccinini](mailto:mattia.piccinini@tum.de),
-Professorship Autonomous Vehicle Systems,
-School of Engineering and Design,
-Technical University of Munich,
-85748 Garching,
-Germany
-
-
-[Johannes Betz](mailto:johannes.betz@tum.de),
-Professorship Autonomous Vehicle Systems,
-School of Engineering and Design,
-Technical University of Munich,
-85748 Garching,
-Germany
-
-</details>
-
-
-
-<details>
-<summary> <h2>📃 Citation </h2> </summary>
-
-If you use this repository in your research, please cite our related papers:
-
-
-```bibtex
-@article{Kaufeld-MPRBFN2025,
-      title={MP-RBFN: Learning-based Vehicle Motion Primitives using Radial Basis Function Networks}, 
-      author={Marc Kaufeld and Mattia Piccinini and Johannes Betz},
-      year={2025},
-      eprint={2507.10047},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO},
-      url={https://arxiv.org/abs/2507.10047}, 
-}
+# Install the package in editable mode
+pip install -e .
 ```
 
+## Quick Start
 
-</details>
+### Single Scenario Simulation
 
+Run a single CommonRoad scenario:
 
-<details>
-<summary> <h2>👥 Code Contributors </h2> </summary>
+```bash
+cd scripts
+python run_cr_simulation.py
+```
 
-#### MP-RBFN
-[Marc kaufeld](mailto:marc.kaufeld@tum.de)
+### Batch Simulation
 
-</details>
+Run multiple scenarios in parallel with organized output:
+
+```bash
+cd scripts
+python run_cr_simulation_batch.py
+```
+
+## Batch Simulation System
+
+### Overview
+
+The batch simulation system allows you to process multiple CommonRoad scenarios in parallel, with organized output management and real-time progress tracking.
+
+### Features
+
+- **Multi-process execution**: Run up to 12+ scenarios simultaneously (CPU-based)
+- **Organized outputs**: Each scenario gets its own folder with plots, GIFs, logs, and metadata
+- **Real-time CSV updates**: Results are written after each scenario completion
+- **Frenetix-style integration**: Compatible with existing scenario folder structures
+- **Automatic scenario detection**: Reads scenario list from CSV file
+- **Comprehensive logging**: Detailed planner information and error handling
+
+### Scenario Structure
+
+The batch system expects scenarios organized in Frenetix-style structure:
+
+```
+/home/yuan/Dataset/Frenetix-Motion-Planner/Scenarios_batch/
+├── CHN_Beijing-7_7_T-1/
+│   └── Original/
+│       └── CHN_Beijing-7_7_T-1.xml
+├── CHN_Qingdao-11_13_T-1/
+│   └── Original/
+│       └── CHN_Qingdao-11_13_T-1.xml
+├── DEU_Arnstadt-36_1_T-1/
+│   └── Original/
+│       └── DEU_Arnstadt-36_1_T-1.xml
+└── ... (more scenario folders)
+```
+
+### Configuration
+
+#### 1. Edit the CSV file
+
+Modify `/home/yuan/Dataset/Frenetix-Motion-Planner/scenario_batch_list.csv` to include only the scenarios you want to process:
+
+```csv
+CHN_Beijing-7_7_T-1
+CHN_Qingdao-11_13_T-1
+DEU_Arnstadt-36_1_T-1
+# Add or remove scenarios as needed
+```
+
+#### 2. Run batch evaluation
+
+```bash
+cd /home/yuan/Dataset/RBFN-Motion-Primitives/scripts
+python run_cr_simulation_batch.py
+```
+
+#### 3. Configuration options
+
+In `run_cr_simulation_batch.py`, you can modify:
+
+```python
+# Batch configuration
+DELETE_ALL_FORMER_LOGS = True
+MAX_WORKERS = 12  # Number of parallel simulations
+LOGGING_LEVEL_INTERFACE = "info"
+LOGGING_LEVEL_PLANNER = "info"
+CPU_ONLY = True  # Force CPU execution for higher parallelism
+```
+
+### Output Structure
+
+After running batch simulations, results are organized as follows:
+
+```
+logs/
+├── score_overview.csv                    # Summary of all scenarios
+├── CHN_Beijing-7_7_T-1/
+│   ├── plots/                           # All generated plots
+│   │   ├── CHN_Beijing-7_7_T-1_0.png
+│   │   ├── CHN_Beijing-7_7_T-1_1.png
+│   │   └── final_trajectory.png
+│   ├── CHN_Beijing-7_7_T-1.gif         # Animation GIF
+│   ├── Interface_Logger.log             # Interface logs
+│   ├── ML_Planner.log                   # Planner logs
+│   └── planner_info.json                # Detailed planner metrics
+├── CHN_Qingdao-11_13_T-1/
+│   ├── plots/
+│   ├── CHN_Qingdao-11_13_T-1.gif
+│   ├── logs/
+│   └── planner_info.json
+└── ...
+```
+
+### CSV Output Format
+
+The `score_overview.csv` follows Frenetix format:
+
+```csv
+scenario;agent;timestep;status;message;result;collision_type;colliding_object_id
+CHN_Beijing-7_7_T-1;mprbfn;147;success;;0.892929;;
+CHN_Qingdao-11_13_T-1;mprbfn;80;success;;1.159697;;
+DEU_Arnstadt-36_1_T-1;mprbfn;;fail;CUDA out of memory;;;
+```
+
+### Performance Optimization
+
+#### CPU vs GPU Mode
+
+- **GPU Mode** (`CPU_ONLY = False`): Faster per scenario, limited to 1-2 workers
+- **CPU Mode** (`CPU_ONLY = True`): Slower per scenario, but can use 12+ workers
+
+#### Memory Management
+
+- **GPU Mode**: Set `MAX_WORKERS = 1` or `2` to avoid CUDA OOM
+- **CPU Mode**: Set `MAX_WORKERS = os.cpu_count()` for maximum parallelism
+
+## Visualization Features
+
+### Plot Configuration
+
+- **60m x 60m window**: Each timestep plot is centered on the ego vehicle with a 60m x 60m view
+- **SVG/PNG output**: Configurable via `visualization_config.make_plot` and `make_gif`
+- **Frenetix-style focus**: Consistent with Frenetix visualization standards
+
+### Disable Unwanted Outputs
+
+To reduce file generation and improve performance:
+
+```python
+# In create_config overrides
+overrides = [
+    # ... other overrides ...
+    "visualization_config.make_plot=false",  # Disable SVG plots
+    "visualization_config.make_gif=true",   # Keep GIFs for animation
+]
+```
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. CUDA Out of Memory
+
+**Problem**: `CUDA out of memory` errors during batch execution
+
+**Solution**: 
+- Set `CPU_ONLY = True` in the batch script
+- Reduce `MAX_WORKERS` to 1-2 if using GPU
+- Ensure no other GPU processes are running
+
+#### 2. Script Hangs After Simulation
+
+**Problem**: Script doesn't exit automatically after completing scenarios
+
+**Solution**: 
+- Ensure matplotlib figures are properly closed (already implemented)
+- Use `spawn` start method for multiprocessing
+- Check for stuck worker processes
+
+#### 3. Plots Not Saved in Scenario Folders
+
+**Problem**: Plots are saved in main logs directory instead of scenario-specific folders
+
+**Solution**: 
+- Verify `log_dir` parameter is passed correctly to `create_config`
+- Check file permissions for scenario folders
+- Ensure plots are moved after generation
+
+#### 4. CSV Not Updating in Real-time
+
+**Problem**: `score_overview.csv` only updates at the end instead of after each scenario
+
+**Solution**: 
+- Verify `_write_scenario_result` is called after each scenario
+- Check file write permissions
+- Ensure CSV file path is correct
+
+#### 5. GIF Shows Only Part of Scenario
+
+**Problem**: Generated GIFs only show 1-2 timesteps instead of full scenario
+
+**Solution**: 
+- Verify `_patch_sim_duration` is correctly reading goal time from XML
+- Check that `interface.max_time_steps_scenario` is set correctly
+- Ensure simulation runs for full duration
+
+### Debug Mode
+
+Enable detailed logging for troubleshooting:
+
+```python
+LOGGING_LEVEL_INTERFACE = "debug"
+LOGGING_LEVEL_PLANNER = "debug"
+```
+
+### Error Logs
+
+Failed scenarios create detailed error logs:
+
+```
+logs/
+└── FAILED_SCENARIO_NAME/
+    ├── error_info.json          # Error details and execution time
+    └── planner_info.json        # Available planner state at failure
+```
+
+## Advanced Configuration
+
+### Custom Scenario Paths
+
+To use different scenario locations:
+
+```python
+# In run_cr_simulation_batch.py
+SCENARIO_ROOT = Path("/path/to/your/Scenarios_batch")
+SCENARIO_LIST_CSV = Path("/path/to/your/scenario_list.csv")
+```
+
+### Custom Output Paths
+
+Modify output locations:
+
+```python
+LOG_PATH = Path("/custom/logs/path")
+MODEL_PATH = Path("/custom/model/path")
+```
+
+### Environment Variables
+
+Set environment variables for specific configurations:
+
+```bash
+# Force CPU-only execution
+export CUDA_VISIBLE_DEVICES=-1
+
+# Set custom log levels
+export INTERFACE_LOG_LEVEL=debug
+export PLANNER_LOG_LEVEL=debug
+```
+
+## Performance Tips
+
+1. **Use CPU mode** for high-parallelism batch runs
+2. **Disable SVG plots** if only GIFs are needed
+3. **Reduce logging levels** for production runs
+4. **Monitor memory usage** when increasing worker count
+5. **Use SSD storage** for faster I/O during batch processing
+
+## Contributing
+
+When modifying the batch system:
+
+1. Test with a small number of scenarios first
+2. Verify CSV output format remains compatible
+3. Check that all outputs are properly organized
+4. Ensure error handling covers edge cases
+5. Update this README with new features
+
+## Support
+
+For issues related to:
+- **Batch execution**: Check troubleshooting section above
+- **Individual scenarios**: Use single scenario mode for debugging
+- **Performance**: Monitor system resources and adjust worker count
+- **Visualization**: Verify plot configuration and file permissions

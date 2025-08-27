@@ -73,15 +73,15 @@ def create_cov_matrix(curve: StateTensor, standard_devs: dict):
     assert (
         keys == curve.state_variables[:num_cov_states]
     ), "standard_devs keys must match the state variables of the curve"
-    stds = torch.tensor([val for key, val in standard_devs.items() if key in curve.state_variables])
+    stds = torch.tensor([val for key, val in standard_devs.items() if key in curve.state_variables], device=curve.device)
     d_stds = torch.tensor(
-        [val for key, val in standard_devs.items() if key[:2] == "d_" and key[2:] in curve.state_variables]
+        [val for key, val in standard_devs.items() if key[:2] == "d_" and key[2:] in curve.state_variables], device=curve.device
     )
 
     cov = torch.diag(stds).repeat(curve.num_states, 1, 1)
     if len(d_stds):
-        ind = torch.arange(num_cov_states)
-        increment = torch.arange(curve.num_states).view(-1, 1) * d_stds
+        ind = torch.arange(num_cov_states, device=curve.device)
+        increment = torch.arange(curve.num_states, device=curve.device).view(-1, 1) * d_stds
         cov[:, ind, ind] += increment
     cov = cov**2  # covariance is square of the standard deviation
     return cov.squeeze()

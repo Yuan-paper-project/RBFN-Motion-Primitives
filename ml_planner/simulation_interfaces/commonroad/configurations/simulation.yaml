@@ -21,7 +21,7 @@ scenario_path: !!null # set in the main file
 
 # visualization parameters
 visualization_config:
-  make_plot: True
+  make_plot: False
   render_plots: True
   show_ref_path: True
   show_optimal_trajectory: True

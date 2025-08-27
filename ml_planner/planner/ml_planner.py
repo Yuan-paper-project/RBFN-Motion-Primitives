@@ -247,6 +247,8 @@ class MLPlanner(nn.Module):
         ] == self.current_state_local.state_variables, "Input labels do not match current state labels"
 
         v0 = self.current_state_local.v
+        # Convert CUDA tensor to CPU for numpy operations
+        v0_cpu = v0.detach().cpu().numpy()
 
         # x range
         def _forward_pos(v0):
@@ -258,7 +260,9 @@ class MLPlanner(nn.Module):
 
                 def acc(v):
                     # constraint acceleration
-                    a = self.a_max * torch.min(torch.tensor(1), self.v_switch / v0) if v0 < self.v_max else 0
+                    # Convert v0 to tensor for consistent operations
+                    v0_tensor = torch.tensor(v0, dtype=DTYPE, device=self.device)
+                    a = self.a_max * torch.min(torch.tensor(1, dtype=DTYPE, device=self.device), self.v_switch / v0_tensor) if v0 < self.v_max else 0
                     return a
                 # euler method
                 v[i] = v[i - 1] + acc(v[i - 1]) * self.dt
@@ -273,8 +277,7 @@ class MLPlanner(nn.Module):
                 # k2v = acc(vi + 0.5 * dt * k1v)
                 # k3v = acc(vi + 0.5 * dt * k2v)
                 # k4v = acc(vi + dt * k3v)
-                # v[i] = vi + (dt / 6.0) * (k1v + 2 * k2v + 2 * k3v + k4v)
-
+                # v[i] = vi + (dt / 6.0) * (k1v + 2 * k2v + 2 * k3v + k4x)
                 # RK4 for x
                 # k1x = vi
                 # k2x = vi + 0.5 * dt * k1v
@@ -283,8 +286,8 @@ class MLPlanner(nn.Module):
                 # x[i] = xi + (dt / 6.0) * (k1x + 2 * k2x + 2 * k3x + k4x)
             return x, v
 
-        x, _ = _forward_pos(v0)
-        x_min = max(np.ceil(v0**2 / (-2 * self.a_max)), self.x_limits[0])
+        x, _ = _forward_pos(v0_cpu)
+        x_min = max(np.ceil(v0_cpu**2 / (-2 * self.a_max)), self.x_limits[0])
         x_max = min(
             np.floor(x[-1]), self.x_limits[1]
         )
@@ -302,8 +305,12 @@ class MLPlanner(nn.Module):
             # sample within driveable region, avoid obstacles etc.
             # create a mask for all points that are within the road boundary
             boundary = [i["states"] for i in self.lane_preds_local if i["boundary"]][0]
-            boundary_path = GeoPath(boundary.coords)
-            mask = boundary_path.contains_points(xy_loc)
+            # Convert CUDA tensor to CPU for matplotlib
+            boundary_coords_cpu = boundary.coords.detach().cpu().numpy()
+            boundary_path = GeoPath(boundary_coords_cpu)
+            # Convert xy_loc to CPU for matplotlib operations
+            xy_loc_cpu = xy_loc.detach().cpu().numpy()
+            mask = boundary_path.contains_points(xy_loc_cpu)
             xy_loc = xy_loc[mask]
 
         psi_range = self.psi_range.repeat(xy_loc.shape[0])
@@ -319,7 +326,9 @@ class MLPlanner(nn.Module):
         if self.sample_feasible_region:
             # sample within driveable region
             # create a mask for all points that are within the road boundary
-            mask = [all(boundary_path.contains_points(pred[i, :, :2])) for i in range(pred.shape[0])]
+            # Convert pred to CPU for matplotlib operations
+            pred_cpu = pred.detach().cpu().numpy()
+            mask = [all(boundary_path.contains_points(pred_cpu[i, :, :2])) for i in range(pred_cpu.shape[0])]
             pred = pred[mask]
 
         mask = torch.all(pred[:, 1:, 0] >= pred[:, :-1, 0], dim=1)

@@ -17,13 +17,15 @@ This script runs a simulation of a with a MP-RBFN Planner commonroad scenario.
 
 ###############################
 # PATH AND DEBUG CONFIGURATION
-CWD = Path.cwd()
-DATA_PATH = CWD / "example_scenarios"
+CWD = Path.cwd()  # This will be the scripts/ directory
+PROJECT_ROOT = CWD.parent  # Go up one level to the main project directory
+
+DATA_PATH = PROJECT_ROOT / "example_scenarios"
 SCENARIO = DATA_PATH / "ZAM_Tjunction-1_27_T-1.xml"
 # SCENARIO = DATA_PATH / "ZAM_Over-1_1_dynamic_1vehicle_10m-s.xml"
-LOG_PATH = CWD / "logs"
+LOG_PATH = PROJECT_ROOT / "logs"
 
-MODEL_PATH = CWD / "ml_planner" /  "sampling" / "models"
+MODEL_PATH = PROJECT_ROOT / "ml_planner" / "sampling" / "models"
 
 # debug configurations#
 DELETE_ALL_FORMER_LOGS = False
@@ -56,7 +58,8 @@ def create_config():
     ]
 
     # Compose the configuration
-    config_dir = str(Path.cwd() / "ml_planner" / "simulation_interfaces" / "commonroad" / "configurations")
+    # Fix the path: go up one level from scripts/ to the main project directory
+    config_dir = str(Path.cwd().parent / "ml_planner" / "simulation_interfaces" / "commonroad" / "configurations")
     with hydra.initialize_config_dir(config_dir=config_dir, version_base=None):
         config = hydra.compose(config_name="simulation", overrides=overrides)
     return config

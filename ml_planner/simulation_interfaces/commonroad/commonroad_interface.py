@@ -239,8 +239,10 @@ class CommonroadInterface(ABC):
     def plan_step(self, cr_state_global):
         planner_state_global = self.planner_state_list[-1]
         # get desired velocity at end of planning horizon
+        # Convert CUDA tensor to CPU before passing to velocity planner
+        position_cpu = planner_state_global.coords.detach().cpu().numpy()
         desired_velocity = self.reference_trajectory.get_velocity_at_position_with_lookahead(
-            position=planner_state_global.coords,
+            position=position_cpu,
             lookahead_s=self.trajectory_planner.horizon,
         )
         self.msg_logger.debug(f"desired velocity: {desired_velocity}, current velocity: {planner_state_global.v}")
@@ -334,10 +336,10 @@ class CommonroadInterface(ABC):
             ego_start_pos = ego.initial_state.position
             # create renderer object
             plot_limits = [
-                -30 + ego_start_pos[0],
-                90 + ego_start_pos[0],
-                -30 + ego_start_pos[1],
-                90 + ego_start_pos[1],
+                ego_start_pos[0] - 30,
+                ego_start_pos[0] + 30,
+                ego_start_pos[1] - 30,
+                ego_start_pos[1] + 30,
             ]
             rnd = MPRenderer(plot_limits=plot_limits, figsize=(10, 10))
 
@@ -377,12 +379,26 @@ class CommonroadInterface(ABC):
             ego.draw(rnd, draw_params=ego_params)
             rnd.render()
 
+            # Enforce exact 60m x 60m window centered on ego
+            try:
+                rnd.ax.set_xlim(ego_start_pos[0] - 30, ego_start_pos[0] + 30)
+                rnd.ax.set_ylim(ego_start_pos[1] - 30, ego_start_pos[1] + 30)
+                rnd.ax.set_aspect('equal', adjustable='box')
+            except Exception:
+                pass
+
             if self.visualization_config.show_all_trajectories:
                 # plot all sampled trajectories that do not cross the road boundary (every 3rd trajectory)
+                # Convert CUDA tensors to numpy arrays for matplotlib
+                # Access the underlying tensor directly and convert to CPU
+                coords_tensor = self.all_trajectories.states[..., [self.all_trajectories.x_idx, self.all_trajectories.y_idx]]
+                coords_cpu = coords_tensor.detach().cpu()
                 for i in range(0, self.all_trajectories.num_batches, 3):
+                    x_coords = coords_cpu[i, :, 0].numpy()
+                    y_coords = coords_cpu[i, :, 1].numpy()
                     rnd.ax.plot(
-                        self.all_trajectories.coords[i, :, 0],
-                        self.all_trajectories.coords[i, :, 1],
+                        x_coords,
+                        y_coords,
                         color="#E37222",
                         markersize=1.5,
                         zorder=19,
@@ -404,30 +420,39 @@ class CommonroadInterface(ABC):
                 )
 
             # draw predictions
-            draw_uncertain_predictions(self.obstacle_predictions_global.predictions, rnd.ax)
+            # draw_uncertain_predictions(self.obstacle_predictions_global.predictions, rnd.ax)
             plot_dir = os.path.join(self.log_path, "plots")
             os.makedirs(plot_dir, exist_ok=True)
-            plt.savefig(
-                f"{plot_dir}/{self.scenario.scenario_id}_{timestep}.svg",
-                format="svg",
-                dpi=300,
-                bbox_inches="tight",
-                pad_inches=0,
-                transparent=False,
-            )
+            # Save SVG only if explicit plotting is enabled
+            if self.visualization_config.make_plot:
+                plt.savefig(
+                    f"{plot_dir}/{self.scenario.scenario_id}_{timestep}.svg",
+                    format="svg",
+                    dpi=300,
+                    bbox_inches=None,
+                    pad_inches=0,
+                    transparent=False,
+                )
             if self.visualization_config.make_gif:
                 plt.axis("off")
                 plt.savefig(
                     f"{plot_dir}/{self.scenario.scenario_id}_{timestep}.png",
                     format="png",
                     dpi=300,
-                    bbox_inches="tight",
+                    bbox_inches=None,
                     pad_inches=0,
                 )
             # show plot
             if self.visualization_config.render_plots:
-                matplotlib.use("TkAgg")
-                plt.pause(0.0001)
+                try:
+                    matplotlib.use("TkAgg")
+                    plt.pause(0.0001)
+                except ImportError:
+                    # Fallback for headless environments
+                    matplotlib.use("Agg")
+                    plt.pause(0.0001)
+            # Close figure to free resources
+            plt.close()
 
     def plot_final_trajectory(self):
         """
@@ -575,19 +600,28 @@ class CommonroadInterface(ABC):
 
         plot_dir = os.path.join(self.log_path, "plots")
         os.makedirs(plot_dir, exist_ok=True)
-        plt.savefig(
-            f"{plot_dir}/final_trajectory.svg",
-            format="svg",
-            dpi=300,
-            bbox_inches="tight",
-            pad_inches=0,
-            transparent=False,
-        )
+        # Save SVG only if explicit plotting is enabled
+        if self.visualization_config.make_plot:
+            plt.savefig(
+                f"{plot_dir}/final_trajectory.svg",
+                format="svg",
+                dpi=300,
+                bbox_inches="tight",
+                pad_inches=0,
+                transparent=False,
+            )
 
         # show plot
         if self.visualization_config.render_plots:
-            matplotlib.use("TkAgg")
-            plt.show()
+            try:
+                matplotlib.use("TkAgg")
+                plt.show()
+            except ImportError:
+                # Fallback for headless environments
+                matplotlib.use("Agg")
+                plt.show()
+        # Close figure to free resources
+        plt.close()
 
     def create_gif(self):
         if self.visualization_config.make_gif:
