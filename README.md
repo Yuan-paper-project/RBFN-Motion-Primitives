@@ -52,13 +52,6 @@ The original MP-RBFN repository can be found at:
 - **GitHub**: [TUM-AVS/MP-RBFN](https://github.com/TUM-AVS/MP-RBFN)
 - **Original Authors**: Marc Kaufeld, Mattia Piccinini, Johannes Betz
 - **Institution**: Technical University of Munich (TUM)
-
-## Citation
-
-If you use this modified version in your research, please cite both:
-1. **The original MP-RBFN paper** (see original repository)
-2. **Your modifications** if they contribute to your research
-
 ---
 
 This repository contains the implementation of MP-RBFN (Motion Primitives based on Radial Basis Function Networks) for motion planning in autonomous driving scenarios.
